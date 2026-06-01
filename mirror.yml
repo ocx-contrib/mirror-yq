@@ -1,0 +1,85 @@
+name: yq
+target:
+  registry: ocx.sh
+  repository: yq
+
+source:
+  type: github_release
+  owner: mikefarah
+  repo: yq
+  tag_pattern: "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+# Pass 1 — Linux only. darwin/windows staged below for Pass 2/3.
+assets:
+  # Raw, statically linked Go binaries. Anchor with ^…$ so the sibling
+  # `yq_<os>_<arch>.tar.gz` / `.zip` / `.exe.tar.gz` variants never match.
+  linux/amd64:
+    - "^yq_linux_amd64$"
+  linux/arm64:
+    - "^yq_linux_arm64$"
+  # darwin/amd64:
+  #   - "^yq_darwin_amd64$"
+  # darwin/arm64:
+  #   - "^yq_darwin_arm64$"
+  # windows/amd64:
+  #   - "^yq_windows_amd64\\.exe$"
+  # windows/arm64:
+  #   - "^yq_windows_arm64\\.exe$"
+
+asset_type:
+  # Raw binary on every platform. `.exe` is appended automatically on
+  # Windows when the downloaded asset carries it, so a uniform name works.
+  type: binary
+  name: yq
+
+metadata:
+  default: metadata.json
+
+skip_prereleases: true
+cascade: true
+build_timestamp: none
+
+versions:
+  # windows/arm64 (`yq_windows_arm64.exe`) first ships in v4.46.1; the
+  # floor is set to 4.46.0 so all six platforms resolve uniformly across
+  # the backfill set (4.40.x–4.45.x lack the windows/arm64 asset).
+  min: "4.46.0"
+  new_per_run: 5
+  poll_interval: "0 */6 * * *"
+
+verify:
+  github_asset_digest: true
+
+concurrency:
+  max_downloads: 8
+  max_bundles: 4
+  max_pushes: 2
+  rate_limit_ms: 100
+  max_retries: 3
+  compression_threads: 0
+
+tests:
+  - name: smoke
+    script: tests/smoke.star
+
+platforms:
+  linux/amd64:
+    runner: ubuntu-latest
+  linux/arm64:
+    runner: ubuntu-24.04-arm
+  # darwin/amd64:
+  #   runner: macos-latest
+  #   prefix: ["arch", "-x86_64"]
+  # darwin/arm64:
+  #   runner: macos-latest
+  #   shell: bash
+  # windows/amd64:
+  #   runner: windows-latest
+  #   shell: pwsh
+  # windows/arm64:
+  #   runner: windows-11-arm
+  #   shell: pwsh
+
+notify:
+  discord:
+    webhook_secret: OCX_MIRROR_DISCORD_HOOK
