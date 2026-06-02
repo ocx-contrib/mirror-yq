@@ -21,10 +21,10 @@ assets:
     - "^yq_darwin_amd64$"
   darwin/arm64:
     - "^yq_darwin_arm64$"
-  # windows/amd64:
-  #   - "^yq_windows_amd64\\.exe$"
-  # windows/arm64:
-  #   - "^yq_windows_arm64\\.exe$"
+  windows/amd64:
+    - "^yq_windows_amd64\\.exe$"
+  windows/arm64:
+    - "^yq_windows_arm64\\.exe$"
 
 asset_type:
   # Raw binary on every platform. `.exe` is appended automatically on
@@ -73,12 +73,12 @@ platforms:
     runner: macos-14
   darwin/arm64:
     runner: macos-14
-  # windows/amd64:
-  #   runner: windows-latest
-  #   shell: pwsh
-  # windows/arm64:
-  #   runner: windows-11-arm
-  #   shell: pwsh
+  windows/amd64:
+    runner: windows-latest
+    shell: pwsh
+  windows/arm64:
+    runner: windows-11-arm
+    shell: pwsh
 
 notify:
   discord:
