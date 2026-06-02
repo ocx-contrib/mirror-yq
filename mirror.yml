@@ -9,7 +9,7 @@ source:
   repo: yq
   tag_pattern: "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
 
-# Pass 1 — Linux only. darwin/windows staged below for Pass 2/3.
+# Linux + darwin enabled. windows staged below for a later pass.
 assets:
   # Raw, statically linked Go binaries. Anchor with ^…$ so the sibling
   # `yq_<os>_<arch>.tar.gz` / `.zip` / `.exe.tar.gz` variants never match.
@@ -17,10 +17,10 @@ assets:
     - "^yq_linux_amd64$"
   linux/arm64:
     - "^yq_linux_arm64$"
-  # darwin/amd64:
-  #   - "^yq_darwin_amd64$"
-  # darwin/arm64:
-  #   - "^yq_darwin_arm64$"
+  darwin/amd64:
+    - "^yq_darwin_amd64$"
+  darwin/arm64:
+    - "^yq_darwin_arm64$"
   # windows/amd64:
   #   - "^yq_windows_amd64\\.exe$"
   # windows/arm64:
@@ -67,12 +67,10 @@ platforms:
     runner: ubuntu-latest
   linux/arm64:
     runner: ubuntu-24.04-arm
-  # darwin/amd64:
-  #   runner: macos-latest
-  #   prefix: ["arch", "-x86_64"]
-  # darwin/arm64:
-  #   runner: macos-latest
-  #   shell: bash
+  darwin/amd64:
+    runner: macos-13
+  darwin/arm64:
+    runner: macos-14
   # windows/amd64:
   #   runner: windows-latest
   #   shell: pwsh
