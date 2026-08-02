@@ -1,0 +1,109 @@
+extends: ../mirror-base.yml
+
+name: yq
+
+# Logical index package `yq/yq` at the physical path
+# `ghcr.io/ocx-contrib/yq/yq` — slash segments, never hyphen-flattened. The
+# first segment must be this repo's own GitHub owner: GITHUB_TOKEN only
+# authorises packages owned by the repo the workflow runs in.
+#
+# Tool-as-namespace: upstream's owner is the personal handle `mikefarah`, so
+# the tool names itself rather than borrowing a person's account name.
+#
+# Succeeds the flat `ocx.sh/yq` coordinate this repository published before the
+# grouped layout, the same way mirror-kitware/cmake succeeds mirror-cmake.
+target:
+  registry: ghcr.io
+  repository: ocx-contrib/yq/yq
+
+source:
+  type: github_release
+  owner: mikefarah
+  repo: yq
+  tag_pattern: "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+# ─── libc gate (Phase 3.5) — the evidence, not the conclusion ───────────────
+#
+# yq is a pure-Go binary built without cgo, so upstream ships ONE Linux build
+# per arch and it is fully static. Measured on v4.53.3:
+#
+#   $ file yq_linux_amd64
+#   ELF 64-bit LSB executable, x86-64, statically linked, Go BuildID=…, stripped
+#   $ readelf -l … | grep INTERP  → (none)
+#   $ readelf -d … | grep NEEDED  → (none)
+#   $ file yq_linux_arm64
+#   ELF 64-bit LSB executable, ARM aarch64, statically linked, …
+#
+# No PT_INTERP and no DT_NEEDED means the artifact requires nothing of the
+# host, so both Linux keys are BARE — no `+libc.*` suffix. Upstream publishes
+# no musl/alpine variant, so there is no counterpart to split against. Container
+# legs (ubuntu + alpine + fedora) live in ../mirror-base.yml and are what turn
+# that claim into evidence.
+#
+# ─── Scope (verified against v4.46.1, the first in-range release, and v4.53.3)
+#
+# Upstream also publishes, and this mirror deliberately does not carry:
+#   yq_linux_{386,arm,loong64,mips*,ppc64*,riscv64,s390x}  — no GHA runner
+#   yq_windows_{386,arm}.exe                               — no GHA runner
+#   *.tar.gz / *.zip wrappers of the same binaries         — redundant
+#   yq_*.pkg, checksums*, man page tarball                 — installers, sidecars
+#
+# The anchored ^…$ regexes are what keep those out — `^yq_linux_amd64$` does
+# not match `yq_linux_amd64.tar.gz`, and `^yq_windows_arm64\.exe$` does not
+# match the 32-bit `yq_windows_arm.exe`. Resolution verified BOTH ways across
+# EVERY in-range release (all 14 of v4.46.1 … v4.53.3): each of the six
+# patterns matches EXACTLY one asset. A pattern matching zero is silently
+# skipped, not an error — it would yield a green run with a missing platform.
+assets:
+  linux/amd64:
+    - "^yq_linux_amd64$"
+  linux/arm64:
+    - "^yq_linux_arm64$"
+  darwin/amd64:
+    - "^yq_darwin_amd64$"
+  darwin/arm64:
+    - "^yq_darwin_arm64$"
+  windows/amd64:
+    - "^yq_windows_amd64\\.exe$"
+  windows/arm64:
+    - "^yq_windows_arm64\\.exe$"
+
+asset_type:
+  # Raw binary on every platform — no archive to unpack. Renamed to `yq`
+  # (yq.exe on Windows; the .exe is appended automatically when the downloaded
+  # asset carries it), so one metadata file serves all six platforms.
+  type: binary
+  name: yq
+
+metadata:
+  default: metadata.json
+
+catalog:
+  logo: logo.svg
+
+versions:
+  # windows/arm64 (`yq_windows_arm64.exe`) first ships in v4.45.2; everything
+  # below that lacks it and would publish five platforms silently. The floor is
+  # 4.46.0 — the first release at or above it is v4.46.1 — so every mirrored
+  # version resolves all six platforms uniformly.
+  min: "4.46.0"
+  new_per_run: 5
+  poll_interval: "0 */6 * * *"
+
+tests:
+  # `script:` resolves from the REPOSITORY ROOT — unlike `metadata.default` and
+  # `catalog.logo` above, which resolve against this spec's own directory.
+  - name: smoke
+    script: yq/tests/smoke.star
+
+annotations:
+  # From the Phase 1.5 license gate:
+  #   $ gh api repos/mikefarah/yq/license --jq '.license.spdx_id'
+  #   MIT
+  org.opencontainers.image.licenses: "MIT"
+
+announce:
+  # Spelled out, not derived from target.repository — the logical name and the
+  # physical path are related by convention only.
+  package: yq/yq
+  fork: ocx-contrib/index
